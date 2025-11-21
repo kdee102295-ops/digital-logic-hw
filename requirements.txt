@@ -1,3 +1,4 @@
 streamlit
 schemdraw
 matplotlib
+sympy
