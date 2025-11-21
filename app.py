@@ -20,9 +20,8 @@ def new_problem():
     st.session_state['input_a'] = random.choice([0, 1])
     st.session_state['input_b'] = random.choice([0, 1])
     st.session_state['gate_type'] = random.choice(["AND", "OR", "XOR", "NAND"])
-    # Clear previous user input if possible or just let them overwrite
 
-# --- 2. Draw the Circuit ---
+# --- 2. Draw the Circuit (THE FIX IS HERE) ---
 # Define logic for calculation
 gate_logic = {
     "AND": lambda a, b: a & b,
@@ -31,37 +30,38 @@ gate_logic = {
     "NAND": lambda a, b: int(not(a & b))
 }
 
-# Calculate correct answer based on stored state
+# Calculate correct answer
 correct_answer = gate_logic[st.session_state['gate_type']](
     st.session_state['input_a'], 
     st.session_state['input_b']
 )
 
-# Drawing logic
-with schemdraw.Drawing(show=False) as d:
-    d.config(fontsize=14)
-    
-    # Select the correct gate element dynamically
-    if st.session_state['gate_type'] == "AND":
-        gate_element = logic.And()
-    elif st.session_state['gate_type'] == "OR":
-        gate_element = logic.Or()
-    elif st.session_state['gate_type'] == "XOR":
-        gate_element = logic.Xor()
-    elif st.session_state['gate_type'] == "NAND":
-        gate_element = logic.Nand()
-        
-    G = d.add(gate_element)
-    
-    # Add inputs
-    d.add(logic.Line().left(1).at(G.in1).label(f"A={st.session_state['input_a']}", 'left'))
-    d.add(logic.Line().left(1).at(G.in2).label(f"B={st.session_state['input_b']}", 'left'))
-    
-    # Add output
-    d.add(logic.Line().right(1).at(G.out).label("?", 'right'))
-    
-    # Render the drawing into Streamlit
-    st.pyplot(d.fig)
+# Create the Drawing Object explicitly (No 'with' statement)
+d = schemdraw.Drawing()
+d.config(fontsize=14)
+
+# Select the correct gate element dynamically
+if st.session_state['gate_type'] == "AND":
+    gate_element = logic.And()
+elif st.session_state['gate_type'] == "OR":
+    gate_element = logic.Or()
+elif st.session_state['gate_type'] == "XOR":
+    gate_element = logic.Xor()
+elif st.session_state['gate_type'] == "NAND":
+    gate_element = logic.Nand()
+
+# Add elements to the drawing
+G = d.add(gate_element)
+d.add(logic.Line().left(1).at(G.in1).label(f"A={st.session_state['input_a']}", 'left'))
+d.add(logic.Line().left(1).at(G.in2).label(f"B={st.session_state['input_b']}", 'left'))
+d.add(logic.Line().right(1).at(G.out).label("?", 'right'))
+
+# FORCE the drawing to render and capture it in 'fig'
+# show=False prevents it from trying to open a pop-up window
+d.draw(show=False) 
+
+# Pass the specific Matplotlib figure object to Streamlit
+st.pyplot(d.fig)
 
 # --- 3. Student Interaction ---
 with st.form("answer_form"):
