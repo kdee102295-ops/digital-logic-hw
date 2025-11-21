@@ -9,19 +9,17 @@ st.title("Digital Logic Practice")
 st.write("Solve the circuit below. Refresh or click 'New Problem' to try again.")
 
 # --- 1. State Management ---
-# We need to store the problem so it doesn't disappear when you click "Submit"
 if 'input_a' not in st.session_state:
     st.session_state['input_a'] = random.choice([0, 1])
     st.session_state['input_b'] = random.choice([0, 1])
     st.session_state['gate_type'] = random.choice(["AND", "OR", "XOR", "NAND"])
 
-# Helper function to reset the problem
 def new_problem():
     st.session_state['input_a'] = random.choice([0, 1])
     st.session_state['input_b'] = random.choice([0, 1])
     st.session_state['gate_type'] = random.choice(["AND", "OR", "XOR", "NAND"])
 
-# --- 2. Draw the Circuit (THE FIX IS HERE) ---
+# --- 2. Draw the Circuit (FIXED METHOD) ---
 # Define logic for calculation
 gate_logic = {
     "AND": lambda a, b: a & b,
@@ -30,17 +28,21 @@ gate_logic = {
     "NAND": lambda a, b: int(not(a & b))
 }
 
-# Calculate correct answer
 correct_answer = gate_logic[st.session_state['gate_type']](
     st.session_state['input_a'], 
     st.session_state['input_b']
 )
 
-# Create the Drawing Object explicitly (No 'with' statement)
-d = schemdraw.Drawing()
+# THE FIX: Create the Matplotlib Figure explicitly first
+# This guarantees 'fig' exists and is valid.
+fig, ax = plt.subplots() 
+ax.axis('off') # Turn off the X/Y axis borders
+
+# Tell Schemdraw to draw ON TOP OF the axis we just created
+d = schemdraw.Drawing(canvas=ax)
 d.config(fontsize=14)
 
-# Select the correct gate element dynamically
+# Select the correct gate
 if st.session_state['gate_type'] == "AND":
     gate_element = logic.And()
 elif st.session_state['gate_type'] == "OR":
@@ -50,18 +52,17 @@ elif st.session_state['gate_type'] == "XOR":
 elif st.session_state['gate_type'] == "NAND":
     gate_element = logic.Nand()
 
-# Add elements to the drawing
+# Add elements
 G = d.add(gate_element)
 d.add(logic.Line().left(1).at(G.in1).label(f"A={st.session_state['input_a']}", 'left'))
 d.add(logic.Line().left(1).at(G.in2).label(f"B={st.session_state['input_b']}", 'left'))
 d.add(logic.Line().right(1).at(G.out).label("?", 'right'))
 
-# FORCE the drawing to render and capture it in 'fig'
-# show=False prevents it from trying to open a pop-up window
-d.draw(show=False) 
+# Render the drawing onto our 'fig'
+d.draw(show=False)
 
-# Pass the specific Matplotlib figure object to Streamlit
-st.pyplot(d.fig)
+# Pass the explicit figure to Streamlit
+st.pyplot(fig)
 
 # --- 3. Student Interaction ---
 with st.form("answer_form"):
@@ -74,5 +75,4 @@ with st.form("answer_form"):
         else:
             st.error("❌ Incorrect. Try again.")
 
-# Button to generate next problem
 st.button("Generate New Problem", on_click=new_problem)
